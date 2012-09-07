@@ -6,6 +6,8 @@ using namespace node;
 using namespace v8;
 using namespace std;
 
+#include "node-lemmer.h"
+
 // Convert a JavaScript string to a std::string.  To not bother too
 // much with string encodings we just use ascii.
 string ObjectToString(Local<Value> value) {
@@ -85,6 +87,6 @@ extern "C" {
       NODE_SET_METHOD(target, "hello", hello);
   }
 
-  NODE_MODULE(moduleName, init)
+  NODE_MODULE(node_lemmer, init)
 }
 

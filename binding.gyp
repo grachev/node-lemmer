@@ -1,7 +1,7 @@
 {
 	'targets': [
 		{
-			'target_name': 'lemmatizer',
+			'target_name': 'node_lemmer',
 			'include_dirs': [ 'include' ],
 			'cflags': [
 				'-O3',
@@ -28,7 +28,8 @@
 				'src/lemmatizer.c',
 				'src/paradigms.c',
 				'src/prediction.c',
-				'src/txml.cpp'
+				'src/txml.cpp',
+				'src/node-lemmer.cpp'
 			],
 			'conditions': [
 				['OS=="mac"', {
