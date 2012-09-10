@@ -1,3 +1,4 @@
 var lemmer = require('./');
 
-console.log(lemmer.hello('123'));
+var lem = new lemmer.Lemmer();
+lem.lemmatize(process.argv[2]);

@@ -3,24 +3,6 @@
 		{
 			'target_name': 'node_lemmer',
 			'include_dirs': [ 'include' ],
-			'cflags': [
-				'-O3',
-				'-Wall',
-				'-fomit-frame-pointer',
-				'-funroll-loops',
-				'-pedantic',
-				'-Wno-long-long',
-				'-fPIC'
-			],
-			'cflags_cc': [
-                '-O3',
-                '-Wall',
-                '-fomit-frame-pointer',
-                '-funroll-loops',
-                '-pedantic',
-                '-Wno-long-long',
-                '-fPIC'
-            ],
 			'cflags!': [ '-fno-exceptions' ],
 			'cflags_cc!': [ '-fno-exceptions' ],
 			'sources': [
@@ -29,7 +11,8 @@
 				'src/paradigms.c',
 				'src/prediction.c',
 				'src/txml.cpp',
-				'src/node-lemmer.cpp'
+				'src/charset_adapters.c',
+				'src/node-lemmer.cc'
 			],
 			'conditions': [
 				['OS=="mac"', {
