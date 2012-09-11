@@ -13,6 +13,8 @@ using namespace v8;
 using namespace std;
 
 class Lemmer : public ObjectWrap, public tl::lemmatizer {
+    static const size_t MAX_WORD_LEN = 1000;
+
 public:
 	static void Initialize(Handle<Object> target) {
         HandleScope scope;
@@ -27,19 +29,25 @@ public:
 protected:
     static Handle<Value> New(const Arguments& args) {
         HandleScope scope;
-        Lemmer* lemmer = new Lemmer();
+
+         if (args.Length() < 2 || !args[0]->IsString() || !args[1]->IsString())
+            return ThrowException(Exception::TypeError(String::New("Wrong args")));
+
+        string dict = ToStdString(args[0]);
+        string paradigms = ToStdString(args[1]);
+        string predict;
+        if (args.Length() == 3 && args[2]->IsString())
+            predict = ToStdString(args[2]);
+
+        Lemmer* lemmer = new Lemmer(dict, paradigms, predict);
         lemmer->Wrap(args.This());
         return args.This();
     }
 
-    Lemmer()
+    Lemmer(const string& dict, const string& paradigms, const string& predict)
         : ObjectWrap()
     {
-        string dict = "/Users/grachev/src/turglem-russian-0.2/dict_russian.auto";
-        string predict = "/Users/grachev/src/turglem-russian-0.2/prediction_russian.auto";
-        string paradigms = "/Users/grachev/src/turglem-russian-0.2/paradigms_russian.bin";
-
-        load_lemmatizer(dict.c_str(), paradigms.c_str(), predict.c_str());
+        load_lemmatizer(dict.c_str(), paradigms.c_str(), !predict.empty() ? predict.c_str() : NULL);
     }
 
     virtual ~Lemmer() throw() {}
@@ -47,35 +55,50 @@ protected:
     static Handle<Value> Lemmatize(const Arguments& args) {
         Lemmer* lemmer = ObjectWrap::Unwrap<Lemmer>(args.This());
         HandleScope scope;
-        cout << "Lemmatize" << endl;
 
         if (args.Length() != 1 || !args[0]->IsString())
             return ThrowException(Exception::TypeError(String::New("Wrong args")));
 
-        Local<String> str = args[0]->ToString();
-        lemmer->Lemmatize(**str);
-    }
+        string word = ToStdString(args[0]);
+        if (word.empty())
+            return ThrowException(Exception::TypeError(String::New("Passed word is empty")));
+       
 
-    void Lemmatize(String& str) {
+        vector<string> lemmas = lemmer->Lemmatize(word);
 
-        vector<unsigned char> chars(str.Utf8Length());
-        str.WriteUtf8((char*)&chars[0]);
-
-        string s(chars.begin(), chars.end());
-        cout << "PARAM: " << s << endl;
-
-        tl::lem_result lr;
-        size_t count = lemmatize<russian_utf8_adapter>(s.c_str(), lr);
-        cout << "RES: " << count << endl;
-        for (size_t i = 0; i < count; i++) {
-            uint32_t srcForm = get_src_form(lr, i);
-            size_t fc = get_form_count(lr, i);
-            cout << "FC: " << fc << " " << (int)get_part_of_speech(lr, i, srcForm) << endl;
-            for (size_t j = 0; j < fc; j++) {
-                cout << "FORM: " << get_text<russian_utf8_adapter>(lr, i, j) << endl;
-            }
+        Local<Array> res = Array::New(lemmas.size());
+        for (size_t i = 0; i < lemmas.size(); ++i) {
+            Local<String> lemma = String::New(lemmas[i].c_str());
+            res->Set(Integer::New(i), lemma);
         }
+
+        return scope.Close(res);
     }
+
+    vector<string> Lemmatize(const string& word) {
+        tl::lem_result lr;
+        size_t count = lemmatize<russian_utf8_adapter>(word.c_str(), lr);
+
+        vector<string> result;
+        for (size_t i = 0; i < count; i++) {
+            //uint32_t srcForm = get_src_form(lr, i);
+            //size_t fc = get_form_count(lr, i);
+            //cout << "FC: " << fc << " " << (int)get_part_of_speech(lr, i, srcForm) << endl;
+            //for (size_t j = 0; j < fc; j++) {
+            //    cout << "FORM: " << get_text<russian_utf8_adapter>(lr, i, j) << endl;
+            //}
+            result.push_back(get_text<russian_utf8_adapter>(lr, i, 0));
+        }
+
+        return result;
+    }
+
+private:
+    static string ToStdString(const Local<Value>& v) {
+        String::Utf8Value temp(v->ToString());
+        return string(*temp);
+    }
+
 };
 
 extern "C" {
