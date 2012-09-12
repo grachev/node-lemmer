@@ -1,11 +1,10 @@
 #include <v8.h>
 #include <node.h>
-#include <iostream>
 #include <vector>
-
-#include <unistd.h>
+#include <algorithm>
 
 #include <turglem/lemmatizer.hpp>
+#include <turglem/english/charset_adapters.hpp>
 #include <turglem/russian/charset_adapters.hpp>
 
 using namespace node;
@@ -13,18 +12,31 @@ using namespace v8;
 using namespace std;
 
 class Lemmer : public ObjectWrap, public tl::lemmatizer {
-    static const size_t MAX_WORD_LEN = 1000;
-
 public:
 	static void Initialize(Handle<Object> target) {
         HandleScope scope;
         Local<FunctionTemplate> t = FunctionTemplate::New(New);
         t->InstanceTemplate()->SetInternalFieldCount(1);
 
-        NODE_SET_PROTOTYPE_METHOD(t, "lemmatize", Lemmatize);
+        NODE_SET_PROTOTYPE_METHOD(t, "lemmatizeEng", Lemmatize<english_utf8_adapter>);
+        NODE_SET_PROTOTYPE_METHOD(t, "lemmatizeRus", Lemmatize<russian_utf8_adapter>);
 
         target->Set(String::NewSymbol("Lemmer"), t->GetFunction());
     }
+
+protected:
+    struct Form {
+        string text;
+        u_int8_t partOfSpeech;
+
+        bool operator<(const Form& other) const {
+            return partOfSpeech == other.partOfSpeech ? text < other.text : partOfSpeech < other.partOfSpeech;
+        }
+
+        bool operator==(const Form& other) const {
+            return partOfSpeech == other.partOfSpeech && text == other.text;
+        }
+    };
 
 protected:
     static Handle<Value> New(const Arguments& args) {
@@ -52,6 +64,7 @@ protected:
 
     virtual ~Lemmer() throw() {}
 
+    template<typename adapter>
     static Handle<Value> Lemmatize(const Arguments& args) {
         Lemmer* lemmer = ObjectWrap::Unwrap<Lemmer>(args.This());
         HandleScope scope;
@@ -64,31 +77,34 @@ protected:
             return ThrowException(Exception::TypeError(String::New("Passed word is empty")));
        
 
-        vector<string> lemmas = lemmer->Lemmatize(word);
+        vector<Form> mainforms = lemmer->Lemmatize<adapter>(word);
 
-        Local<Array> res = Array::New(lemmas.size());
-        for (size_t i = 0; i < lemmas.size(); ++i) {
-            Local<String> lemma = String::New(lemmas[i].c_str());
-            res->Set(Integer::New(i), lemma);
+        Local<Array> res = Array::New(mainforms.size());
+        for (size_t i = 0; i < mainforms.size(); ++i) {
+            Local<Object> form = Object::New();
+            form->Set(NODE_PSYMBOL("text"), String::New(mainforms[i].text.c_str()));
+            form->Set(NODE_PSYMBOL("partOfSpeech"), Integer::New(mainforms[i].partOfSpeech));
+            res->Set(Integer::New(i), form);
         }
 
         return scope.Close(res);
     }
 
-    vector<string> Lemmatize(const string& word) {
+    template<typename adapter>
+    vector<Form> Lemmatize(const string& word) {
         tl::lem_result lr;
-        size_t count = lemmatize<russian_utf8_adapter>(word.c_str(), lr);
+        size_t count = lemmatize<adapter>(word.c_str(), lr);
 
-        vector<string> result;
+        vector<Form> result;
         for (size_t i = 0; i < count; i++) {
-            //uint32_t srcForm = get_src_form(lr, i);
-            //size_t fc = get_form_count(lr, i);
-            //cout << "FC: " << fc << " " << (int)get_part_of_speech(lr, i, srcForm) << endl;
-            //for (size_t j = 0; j < fc; j++) {
-            //    cout << "FORM: " << get_text<russian_utf8_adapter>(lr, i, j) << endl;
-            //}
-            result.push_back(get_text<russian_utf8_adapter>(lr, i, 0));
+            Form form;
+            form.partOfSpeech = get_part_of_speech(lr, i, get_src_form(lr, i));
+            form.text = get_text<adapter>(lr, i, 0);
+            result.push_back(form);
         }
+
+        sort(result.begin(), result.end());
+        result.erase(unique(result.begin(), result.end()), result.end());
 
         return result;
     }

@@ -11,7 +11,8 @@
 				'src/paradigms.c',
 				'src/prediction.c',
 				'src/txml.cpp',
-				'src/charset_adapters.c',
+				'src/russian/charset_adapters.c',
+				'src/english/charset_adapters.c',
 				'src/node-lemmer.cc'
 			],
 			'conditions': [

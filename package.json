@@ -1,7 +1,7 @@
 {
 	"name": "node-lemmer",
 	"main": "./lib/node-lemmer",
-	"description": "Lemmer for NodeJS based on lemmatizer.org",
+	"description": "English and Russian lemmatizer for Node.js",
 	"repository": {
 		"type": "git",
 		"path": "git://github.com/grachev/node-lemmer.git"
