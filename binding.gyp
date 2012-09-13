@@ -10,7 +10,6 @@
 				'src/lemmatizer.c',
 				'src/paradigms.c',
 				'src/prediction.c',
-				'src/txml.cpp',
 				'src/russian/charset_adapters.c',
 				'src/english/charset_adapters.c',
 				'src/node-lemmer.cc'
