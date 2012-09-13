@@ -1,6 +1,6 @@
 {
 	"name": "node-lemmer",
-	"version: "0.1",
+	"version": "0.1",
 	"main": "./lib/node-lemmer",
 	"description": "English and Russian lemmatizer for Node.js",
 	"repository": {
