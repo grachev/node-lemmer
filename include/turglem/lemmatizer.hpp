@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <stdexcept>
+#include <cstring>
 //#include <txml/txml.hpp>
 
 namespace MAFSA {
